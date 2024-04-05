@@ -1,5 +1,6 @@
 CXX      = g++
 CXXFLAGS =  -std=c++20
+CXXFLAGS += -pedantic 
 CXXFLAGS += -Wall
 CXXFLAGS += -Wextra
 CXXFLAGS += -Werror
@@ -17,9 +18,9 @@ endif
 OUTPUT_NAME = filemeta
 
 ifeq ($(OS), Windows_NT)
-	OUTPUT_FILE = .\\$(OUTPUT_NAME)
+	OUTPUT_FILE = bin\\$(OUTPUT_NAME)
 else
-	OUTPUT_FILE = ./$(OUTPUT_NAME)
+	OUTPUT_FILE = bin/$(OUTPUT_NAME)
 endif
 
 
@@ -29,15 +30,15 @@ all: $(OUTPUT_FILE)
 
 
 
-main.o: main.cpp
-	$(CXX) $(CXXFLAGS) -c main.cpp -o main.o
+obj/main.o: src/main.cpp
+	$(CXX) $(CXXFLAGS) -c src/main.cpp -o obj/main.o
 
 
-$(OUTPUT_FILE): main.o
-	$(CXX) $(CXXFLAGS) main.o -o $(OUTPUT_FILE)
+$(OUTPUT_FILE): obj/main.o
+	$(CXX) $(CXXFLAGS) obj/main.o -o $(OUTPUT_FILE)
 
 
 .PHONY: clean
 clean:
 	-$(RM) $(OUTPUT_FILE)
-	-$(RM) *.o
+	-$(RM) obj/*.o
