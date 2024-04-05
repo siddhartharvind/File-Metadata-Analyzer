@@ -1,6 +1,14 @@
+# Ignore files in `bin`
 bin/*
-obj/*
 
+# ...but keep `bin` in project repo structure
+!bin/.gitkeep
+
+obj/*
+!obj/.gitkeep
+
+
+# Build artifacts
 *.o
 *.obj
 *.exe
