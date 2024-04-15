@@ -6,6 +6,7 @@ CXXFLAGS += -Wextra
 CXXFLAGS += -Werror
 CXXFLAGS += -O0
 CXXFLAGS += -ggdb3
+CXXFLAGS += -Wno-type-limits
 
 # MinGW, MSYS on Windows do not have
 # the UBSan, ASan libraries by default.

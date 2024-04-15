@@ -1,10 +1,11 @@
 // C++ Standard headers
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <unordered_map>
 #include <type_traits>
+#include <unordered_map>
 
 // C headers
 #include <sys/stat.h>
@@ -49,13 +50,24 @@ std::string get_file_extension_type(const std::string& extension)
 
     static const std::unordered_map<std::string, std::string>
         extension_to_type {
-            { "txt",   "Text File"          },
-            { "c"  ,   "C Source File"      },
-            { "cpp",   "C++ Source File"    },
-            { "h"  ,   "C/C++ Header File"  },
-            { "lnk",   "Windows Shortcut"   },
-            { "java",  "Java Source File"   },
-            { "class", "Java Class File"    }
+            { "txt",   "Text File"         },
+            { "c"  ,   "C Source File"     },
+            { "cpp",   "C++ Source File"   },
+            { "h"  ,   "C/C++ Header File" },
+            { "lnk",   "Windows Shortcut"  },
+            { "java",  "Java Source File"  },
+            { "class", "Java Class File"   },
+            { "sh",    "Shell script"      },
+            { "pdf",   "PDF"               },
+            { "crx",   "Chrome Extension"  },
+            { "mp3",   "MP3 File"          },
+            { "mp4",   "MP4 File"          },
+            { "zip",   "ZIP Archive"       },
+            { "ico",   "Computer ICO File" },
+            { "gif",   "GIF"               },
+            { "jpg",   "JPG Image"         },
+            { "png",   "PNG Image"         },
+            { "iso",   "ISO Live Disk"     }
         };
 
     auto it = extension_to_type.find(extension);
@@ -183,6 +195,78 @@ std::string get_file_line_ending(const std::string& path) {
 }
 
 
+std::string identify_file_type(const std::string& file_path) {
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file.is_open()) {
+        return "Unable to open file";
+    }
+
+    constexpr int MAX_HEXBYTES_READ = 16;
+    char buffer[MAX_HEXBYTES_READ + 1] = {0}; // + NUL
+    file.read(buffer, MAX_HEXBYTES_READ);
+    file.close();
+
+
+    if (buffer[0] == 0x23 && buffer[1] == 0x21) {
+        // 23 21
+        return "Shell script";
+    }
+    if (buffer[0] == 0x53 && buffer[1] == 0x51 && buffer[2] == 0x4C
+        && buffer[3] == 0x69 && buffer[4] == 0x74 && buffer[5] == 0x65
+        && buffer[6] == 0x20 && buffer[7] == 0x66 && buffer[8] == 0x6F
+        && buffer[9] == 0x72 && buffer[10] == 0x6D && buffer[11] == 0x61
+        && buffer[12] == 0x74 && buffer[13] == 0x20 && buffer[14] == 0x33
+        && buffer[15] == 0x00) {
+        // 53 51 4C 69 74 65 20 66 6F 72 6D 61 74 20 33 00
+        return "SQLite database";
+    }
+    if (buffer[0] == 0x00 && buffer[1] == 0x00 && buffer[2] == 0x01 && buffer[3] == 0x00) {
+        return "Computer ICO icon file";
+    }
+    if (buffer[0] == 0x47 && buffer[1] == 0x49 && buffer[2] == 0x46
+        && buffer[3] == 0x38 && buffer[5] == 0x61) {
+        return "GIF";
+    }
+    if (buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF
+        && buffer[3] == 0xEE) {
+        return "JPG";
+    }
+    if (buffer[0] == 0x52 && buffer[1] == 0x61 && buffer[2] == 0x72
+        && buffer[3] == 0x21 && buffer[4] == 0x1A && buffer[5] == 0x07) {
+        return "RAR";
+    }
+    if (buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E
+        && buffer[3] == 0x47 && buffer[4] == 0x0D && buffer[5] == 0x0A
+        && buffer[6] == 0x1A && buffer[7] == 0x0A) {
+        return "PNG";
+    }
+    if (buffer[0] == 0xCA && buffer[1] == 0xFE && buffer[2] == 0xBA && buffer[3] == 0xBE) {
+        // CA FE BA BE
+        return "Java .class";
+    }
+    if (buffer[0] == 0x25 && buffer[1] == 0x50 && buffer[2] == 0x44 && buffer[3] == 0x46) {
+        return "PDF";
+    }
+    if (buffer[0] == 0x49 && buffer[1] == 0x44 && buffer[2] == 0x33) {
+        return "MP3";
+    }
+    if (buffer[0] == 0x43 && buffer[1] == 0x44 && buffer[2] == 0x30
+        && buffer[3] == 0x30 && buffer[4] == 0x31) {
+        // 43 44 30 30 31
+        return "ISO";
+    }
+    if (buffer[0] == 0x43 && buffer[1] == 0x72 && buffer[2] == 0x32
+        && buffer[3] == 0x34) {
+        // 43 72 32 34
+        return "Google Chrome Extension (CRX)";
+    }
+    if (buffer[0] == 0x00 && buffer[1] == 0x00 && buffer[2] == 0x00 && buffer[3] == 0x18) {
+        return "MP4";
+    }
+    return "Unknown";
+}
+
+
 template <typename T>
 void get_file_metadata_impl(const T& path)
 {
@@ -202,6 +286,7 @@ void get_file_metadata_impl(const T& path)
     oss << "File type: " << get_file_type(path) << '\n';
     oss << "File permissions: " << get_file_permissions(path) << '\n';
     oss << "Line ending: " << get_file_line_ending(path) << '\n';
+    oss << "Kind of file: " << identify_file_type(path) << '\n';
     oss << '\n';
 
     std::cout << oss.str();
