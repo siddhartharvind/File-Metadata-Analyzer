@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <type_traits>
 
 // C headers
 #include <sys/stat.h>
@@ -183,7 +184,7 @@ std::string get_file_line_ending(const std::string& path) {
 
 
 template <typename T>
-void get_file_metadata(const T& path)
+void get_file_metadata_impl(const T& path)
 {
     std::ostringstream oss;
     oss << "File name: " << get_file_name(path) << '\n';
@@ -207,10 +208,15 @@ void get_file_metadata(const T& path)
 }
 
 
-template <typename T, typename... Args>
+template <typename T, typename... Args,
+    typename std::enable_if<std::is_constructible<std::string, T>::value>::type* = nullptr>
 void get_file_metadata(const T& first, const Args&... args)
 {
-    get_file_metadata(first);
+    /**
+     * enable_if and is_constructible ensure that only string types are accepted.
+     */
+
+    get_file_metadata_impl(first);
     if constexpr (sizeof...(args) > 0) {
         get_file_metadata(args...);
     }
