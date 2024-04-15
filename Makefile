@@ -1,16 +1,17 @@
-CXX      = g++
+CXX      =  g++
 CXXFLAGS =  -std=c++20
-CXXFLAGS += -pedantic 
+CXXFLAGS += -pedantic
 CXXFLAGS += -Wall
 CXXFLAGS += -Wextra
 CXXFLAGS += -Werror
 CXXFLAGS += -O0
-CXXFLAGS += -g3
+CXXFLAGS += -ggdb3
 
 # MinGW, MSYS on Windows do not have
 # the UBSan, ASan libraries by default.
 ifneq ($(OS), Windows_NT)
-	CXXFLAGS += -fsanitize=undefined,address
+	CXXFLAGS += -fsanitize=undefined
+	CXXFLAGS += -fsanitize=address
 endif
 
 

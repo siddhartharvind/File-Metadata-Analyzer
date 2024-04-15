@@ -1,6 +1,7 @@
 // C++ Standard headers
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -16,7 +17,7 @@
 
 std::string get_file_name(const std::string& path) {
     /**
-     * This takes an `std::string` with a file's path
+     * This takes a file's path as argument
      * and returns its unqualified name.
      */
 
@@ -47,19 +48,20 @@ std::string get_file_extension_type(const std::string& extension)
 
     static const std::unordered_map<std::string, std::string>
         extension_to_type {
-            { "txt", "Text File"          },
-            { "c"  , "C Source File"      },
-            { "cpp", "C++ Source File"    },
-            { "h"  , "C/C++ Header File"  }
+            { "txt",   "Text File"          },
+            { "c"  ,   "C Source File"      },
+            { "cpp",   "C++ Source File"    },
+            { "h"  ,   "C/C++ Header File"  },
+            { "lnk",   "Windows Shortcut"   },
+            { "java",  "Java Source File"   },
+            { "class", "Java Class File"    }
         };
 
     auto it = extension_to_type.find(extension);
     if (it != extension_to_type.end()) {
         return it->second;
-
-    } else {
-        return "Unknown";
     }
+    return "Unknown";
 }
 
 
@@ -119,20 +121,23 @@ std::string get_file_permissions(const std::string& path) {
         std::exit(EXIT_FAILURE);
     }
 
+    char permissions[11];
     mode_t mode = st.st_mode & 0777;
-    char permissions[10];
-    permissions[0] = (mode & S_IRUSR) ? 'r' : '-';
-    permissions[1] = (mode & S_IWUSR) ? 'w' : '-';
-    permissions[2] = (mode & S_IXUSR) ? 'x' : '-';
-    permissions[3] = (mode & S_IRGRP) ? 'r' : '-';
-    permissions[4] = (mode & S_IWGRP) ? 'w' : '-';
-    permissions[5] = (mode & S_IXGRP) ? 'x' : '-';
-    permissions[6] = (mode & S_IROTH) ? 'r' : '-';
-    permissions[7] = (mode & S_IWOTH) ? 'w' : '-';
-    permissions[8] = (mode & S_IXOTH) ? 'x' : '-';
-    permissions[9] = '\0';
+    // Permissions string e.g.: -rwxrwxrwx
 
-    return permissions;
+    permissions[0] = (S_ISDIR(mode)) ? 'd' : (S_ISLNK(mode)) ? 'l' : '-';
+    permissions[1] = (mode & S_IRUSR) ? 'r' : '-';
+    permissions[2] = (mode & S_IWUSR) ? 'w' : '-';
+    permissions[3] = (mode & S_IXUSR) ? 'x' : '-';
+    permissions[4] = (mode & S_IRGRP) ? 'r' : '-';
+    permissions[5] = (mode & S_IWGRP) ? 'w' : '-';
+    permissions[6] = (mode & S_IXGRP) ? 'x' : '-';
+    permissions[7] = (mode & S_IROTH) ? 'r' : '-';
+    permissions[8] = (mode & S_IWOTH) ? 'w' : '-';
+    permissions[9] = (mode & S_IXOTH) ? 'x' : '-';
+    permissions[10] = '\0';
+
+    return std::string { permissions };
 }
 
 
@@ -177,31 +182,51 @@ std::string get_file_line_ending(const std::string& path) {
 }
 
 
+template <typename T>
+void get_file_metadata(const T& path)
+{
+    std::ostringstream oss;
+    oss << "File name: " << get_file_name(path) << '\n';
+    std::string file_ext = get_file_extension(path);
+    oss << "File extension: " << file_ext;
+    oss << " ("  << get_file_extension_type(file_ext) << ")\n";
+
+    oss << "File size: " << get_file_size(path) << " bytes\n";
+
+    time_t creation_time = get_file_creation_time(path);
+    oss << "File creation time: " << ctime(&creation_time);
+    time_t modification_time = get_file_modification_time(path);
+    oss << "File modification time: " << ctime(&modification_time);
+
+    oss << "File type: " << get_file_type(path) << '\n';
+    oss << "File permissions: " << get_file_permissions(path) << '\n';
+    oss << "Line ending: " << get_file_line_ending(path) << '\n';
+    oss << '\n';
+
+    std::cout << oss.str();
+}
+
+
+template <typename T, typename... Args>
+void get_file_metadata(const T& first, const Args&... args)
+{
+    get_file_metadata(first);
+    if constexpr (sizeof...(args) > 0) {
+        get_file_metadata(args...);
+    }
+}
+
 
 int main(int argc, char *argv[]) {
 
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <filename>" << '\n';
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <path1> [<path2> ...]" << '\n';
         return EXIT_FAILURE;
     }
 
-    std::string path { argv[1] };
-
-    std::cout << "File name: " << get_file_name(path) << '\n';
-    std::string file_ext = get_file_extension(path);
-    std::cout << "File extension: " << file_ext;
-    std::cout << " ("  << get_file_extension_type(file_ext) << ")\n";
-
-    std::cout << "File size: " << get_file_size(path) << " bytes\n";
-
-    time_t creation_time = get_file_creation_time(path);
-    std::cout << "File creation time: " << ctime(&creation_time);
-    time_t modification_time = get_file_modification_time(path);
-    std::cout << "File modification time: " << ctime(&modification_time);
-
-    std::cout << "File type: " << get_file_type(path) << '\n';
-    std::cout << "File permissions: " << get_file_permissions(path) << '\n';
-    std::cout << "Line ending: " << get_file_line_ending(path) << '\n';
+    for (int i = 1; i < argc; ++i) {
+        get_file_metadata(argv[i]);
+    }
 
     return EXIT_SUCCESS;
 }
